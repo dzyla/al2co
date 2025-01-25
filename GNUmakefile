@@ -11,6 +11,9 @@ ifdef UNIX
 EXE	= al2co
 endif
 
+CFLAGS += -fopenmp
+LDFLAGS += -fopenmp
+
 all: $(AL2CO_INSTALL)
 
 install-for-chimera-distribution: $(AL2CO_INSTALL)
