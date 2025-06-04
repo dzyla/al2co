@@ -91,7 +91,7 @@ double effective_number_nogaps_expos(int **ali, int *marks, int n, int start, in
 void freq(int **ali,double **f,int *num_gaps,int *effindiarr,double gap_threshold);
 double *overall_freq(int **ali, int startp, int endp, int *mark);
 double *overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt);
-double *h_weight(int **ali, int ip);
+double *h_weight(int **ali, int ip, double *oaf_ip_out, double *h_oaf_ip_out);
 void h_freq(int **ali, double **f, double **hfr);
 void entro_conv(double **f, int **ali, double *econv);
 void ic_freq(int **ali, double **f, double **icf);
@@ -1548,10 +1548,9 @@ double **sigmaf(double **f)
 }
 
 int totalw;
-double *oaf_ip, *h_oaf_ip; /*unweighted,henikoff frequency at position ip */
 double *overall_freq(int **ali, int startp, int endp, int *mark);
 double *overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt);
-double *h_weight(int **ali, int ip)
+double *h_weight(int **ali, int ip, double *oaf_ip_out, double *h_oaf_ip_out)
 {
 	double *hwt;
 	int count[21];
@@ -1561,11 +1560,12 @@ double *h_weight(int **ali, int ip)
 	int *mark;
 	int gapcount,totalcount,wsign;
 
-	hwt = dvector(0, nal);
-	mark = ivector(0, nal);
-	oaf_ip = dvector(0,20);
-	h_oaf_ip = dvector(0,20);
-	for(i=1;i<=20;i++) h_oaf_ip[i] = 0;
+        hwt = dvector(0, nal);
+        mark = ivector(0, nal);
+        for(i=1;i<=20;i++) {
+                oaf_ip_out[i] = 0.0;
+                h_oaf_ip_out[i] = 0.0;
+        }
 
 	/* mark the sequences with gaps */
 	for(i=1;i<=nal;i++) {
@@ -1604,9 +1604,19 @@ double *h_weight(int **ali, int ip)
         j=0;
         for(i=1;i<=nal;i++) {if(mark[i]>0) j++;}
         if(j==1) {
+                double *tmp_h;
+                double *tmp_o;
                 for(i=1;i<=nal;i++) hwt[i]=mark[i];
-                h_oaf_ip = overall_freq_wgt(ali,maxstart,miniend,mark,hwt);
-                oaf_ip = overall_freq(ali,1,alilen,mark);
+                tmp_h = overall_freq_wgt(ali,maxstart,miniend,mark,hwt);
+                tmp_o = overall_freq(ali,1,alilen,mark);
+                for(i=1;i<=20;i++) {
+                        h_oaf_ip_out[i] = tmp_h[i];
+                        oaf_ip_out[i] = tmp_o[i];
+                }
+                /* temporary arrays allocated with dvector; freed implicitly */
+                (void)tmp_h;
+                (void)tmp_o;
+                free(mark-1);
                 return hwt;
                  }
 
@@ -1663,9 +1673,18 @@ double *h_weight(int **ali, int ip)
 				   }
 		     }
 
-	h_oaf_ip = overall_freq_wgt(ali,maxstart,miniend,mark,hwt);
-	oaf_ip = overall_freq(ali,1,alilen,mark);
-	return hwt;
+        {
+                double *tmp_h = overall_freq_wgt(ali,maxstart,miniend,mark,hwt);
+                double *tmp_o = overall_freq(ali,1,alilen,mark);
+                for(i=1;i<=20;i++) {
+                        h_oaf_ip_out[i] = tmp_h[i];
+                        oaf_ip_out[i] = tmp_o[i];
+                }
+                (void)tmp_h;
+                (void)tmp_o;
+        }
+        free(mark-1);
+        return hwt;
 }
 	
 double **u_oaf,**h_oaf; /* unweighted and henikoff overall frequency */
@@ -1678,14 +1697,16 @@ void h_freq(int **ali, double **f, double **hfr)
 	u_oaf = dmatrix(0,20,0,alilen);
 	h_oaf = dmatrix(0,20,0,alilen);
 	
-	#pragma omp parallel for private(i, hwt, sumofweight) // Pf612
-	for(j=1;j<=alilen;j++) {
-		if(f[0][j]==INDI) {hfr[0][j]=INDI;continue;}
-		hwt = h_weight(ali, j); /* assign position specific weight */
-		for(i=1;i<=20;i++) {
-			u_oaf[i][j]=oaf_ip[i];
-			h_oaf[i][j]=h_oaf_ip[i];
-				   }
+       #pragma omp parallel for private(i, hwt, sumofweight) // Pf612
+       for(j=1;j<=alilen;j++) {
+               double oaf_ip_loc[21];
+               double h_oaf_ip_loc[21];
+               if(f[0][j]==INDI) {hfr[0][j]=INDI;continue;}
+               hwt = h_weight(ali, j, oaf_ip_loc, h_oaf_ip_loc); /* assign position specific weight */
+               for(i=1;i<=20;i++) {
+                       u_oaf[i][j]=oaf_ip_loc[i];
+                       h_oaf[i][j]=h_oaf_ip_loc[i];
+                                  }
 
  		sumofweight = 0;
 		for(i=1;i<=nal;i++) {
