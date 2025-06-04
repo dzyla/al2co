@@ -46,7 +46,6 @@
 #include <string.h>
 /* #include <malloc.h> */
 #include <stddef.h>
-#include <omp.h> // P8cce
 
 
 #define SQUARE(a) ((a)*(a))
@@ -91,7 +90,7 @@ double effective_number_nogaps_expos(int **ali, int *marks, int n, int start, in
 void freq(int **ali,double **f,int *num_gaps,int *effindiarr,double gap_threshold);
 double *overall_freq(int **ali, int startp, int endp, int *mark);
 double *overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt);
-double *h_weight(int **ali, int ip, double *oaf_ip_out, double *h_oaf_ip_out);
+double *h_weight(int **ali, int ip);
 void h_freq(int **ali, double **f, double **hfr);
 void entro_conv(double **f, int **ali, double *econv);
 void ic_freq(int **ali, double **f, double **icf);
@@ -154,7 +153,7 @@ void argument();
 void print_parameters(FILE *outfile,char *argi,char *argo,int nt,char *argt,int argb,char *args,int argm,int argf,int argc, int argw, char *argn,char *arga, char *arge, double argg, char *argp,char *argd);
 char ARG_I[2048],ARG_O[2048],ARG_T[2048],ARG_P[2048],ARG_D[2048],ARG_S[2048],ARG_N[50],ARG_A[50],ARG_E[50];
 
-int main(int argc, char *argv[])
+main(int argc, char *argv[])
 {
 	FILE *fout, *fpdb,*matrixfile,*fpdbout,*fp,*ft;
 	conv_info convinfo;
@@ -176,7 +175,6 @@ int main(int argc, char *argv[])
 	int **ALIGNMENT;
 	double threshold;
 
-	omp_set_num_threads(omp_get_max_threads()); // P27a6
 
 	/*read input arguments */
         if(argc<=2) { argument(); exit(0);}
@@ -260,11 +258,10 @@ int main(int argc, char *argv[])
 	consv=dvector(0,alilen);
 	consvall=dmatrix(0,NUM_METHOD,0,alilen);/* for all 9 methods */
 	csv_index=ivector(0,alilen);
-        #pragma omp parallel for collapse(3) private(i,j,k)
-        for(i=1;i<=MAX_WINDOW;i++)
-                for(j=1;j<=NUM_METHOD;j++)
-                        for(k=0;k<=alilen;k++)
-                                convinfo.conv[i][j][k]=INDI;
+	for(i=1;i<=MAX_WINDOW;i++)
+		for(j=1;j<=NUM_METHOD;j++)
+			for(k=0;k<=alilen;k++)
+				convinfo.conv[i][j][k]=INDI;
 
 	/* get the frequencies */
 	freq(alignment,convinfo.fq,convinfo.ngap,convinfo.eff_indi_arr,ARG_G);
@@ -296,7 +293,6 @@ int main(int argc, char *argv[])
 	for(i=1;i<=9;i++){
 		sumofconv=0;
 		k=0;
-		#pragma omp parallel for reduction(+:sumofconv,k) // Pf612
 		for(j=1;j<=alilen;j++){
 		   if(convinfo.conv[1][i][j]==INDI)continue;
  		   sumofconv+=convinfo.conv[1][i][j];
@@ -309,7 +305,6 @@ int main(int argc, char *argv[])
         for(i=1;i<=NUM_METHOD;i++){
 		j=ARG_W;
                 if(j>*ptoc1){fprintf(stderr,"window size too big!\nARG_W:%d;   ptoc1:%d\n",j,*ptoc1);exit(0);}
-                #pragma omp parallel for private(sumofconv,l) // Pf612
                 for(k=(j+1)/2;k<=convinfo.eff_indi_arr[0]-j/2;k++){
                         sumofconv=0;
                         for(l=k-(j-1)/2;l<=k+j/2;l++){
@@ -317,7 +312,6 @@ int main(int argc, char *argv[])
                                                      }
                         convinfo.conv[j][i][*(ptoc1+k)]=sumofconv/j;
                                                                      }
-		#pragma omp parallel for private(sumofconv,l) // Pf612
 		for(k=1;k<(j+1)/2;k++){
 			sumofconv=0;
 			for(l=1;l<=2*k-1;l++){
@@ -325,7 +319,6 @@ int main(int argc, char *argv[])
 					     }
 			convinfo.conv[j][i][*(ptoc1+k)]=convinfo.avc[i]+(sumofconv/(2*k-1)-convinfo.avc[i])*sqrt(1.0*(2*k-1)/ARG_W);
 				      }
-		#pragma omp parallel for private(sumofconv,l) // Pf612
 		for(k=0;k<=j/2-1;k++){
 			sumofconv=0;
 			for(l=1;l<=2*k+1;l++){
@@ -340,7 +333,6 @@ int main(int argc, char *argv[])
 	/* normalize the conservation indices */
 	nmlconv(consv, convinfo, ARG_W, ARG_C*3+ARG_F+1);
 	if((strcmp(ARG_N,"F")==0)||(strcmp(ARG_N,"f")==0)){
-	    #pragma omp parallel for // Pf612
 	    for(i=1;i<=convinfo.alignlen;i++){
 		if(convinfo.conv[ARG_W][ARG_C*3+ARG_F+1][i]==INDI){
 			consv[i]=0-convinfo.csi[ARG_C*3+ARG_F+1]+convinfo.avc[ARG_C*3+ARG_F+1];}
@@ -350,12 +342,10 @@ int main(int argc, char *argv[])
 
 	/* find the largest and the smallest conservation indices */
 	max_index=mini_index=consv[1];
-	#pragma omp parallel for reduction(max:max_index) reduction(min:mini_index) // Pf612
 	for(i=2;i<=alilen;i++) {
 		if(consv[i]>max_index) max_index=consv[i];
 		if(consv[i]<mini_index) mini_index=consv[i];
 				}
-	#pragma omp parallel for // Pf612
 	for(i=1;i<=alilen;i++) {
 		csv_index[i]=(int)(9.99*(consv[i]-mini_index)/(max_index-mini_index));
 				}
@@ -443,7 +433,6 @@ else{
 	for(j=1;j<=NUM_METHOD;j++) {
            nmlconv(consvall[j], convinfo, ARG_W, j);
            if((strcmp(ARG_N,"F")==0)||(strcmp(ARG_N,"f")==0)){
-            #pragma omp parallel for // Pf612
             for(i=1;i<=convinfo.alignlen;i++){
                 if(convinfo.conv[ARG_W][j][i]==INDI)
                         consvall[j][i]=0-convinfo.csi[j]+convinfo.avc[j];
@@ -526,7 +515,6 @@ void nmlconv(double *conv, conv_info cvf, int wn,int mi)
         cvf.csi[mi]=vc;
 
         if(vc==0){fprintf(stderr,"variance is zero\n");exit(0);}
-        #pragma omp parallel for // Pf612
         for(i=1;i<=cvf.alignlen;i++){
                 if(cvf.conv[wn][mi][i]==INDI) {conv[i]=-1.0;continue;}
                 if(vc!=0)conv[i]=(cvf.conv[wn][mi][i]-mean)/vc;
@@ -928,6 +916,8 @@ switch (c) {
                         c=31; break;
            	 case 'V': 
            		c=7; break;
+		 case 'v':
+                        c=32; break;
           	 case 'A': 
 			c=8; break;
 		 case 'a':
@@ -1110,7 +1100,7 @@ static char **incbuf(int n, char **was);
 static int *incibuf(int n, int *was);
 
 void readali(char *filename);
-int **ali_char2int(char **aseq, int start_num, int start_seq);
+int **ali_char2int(char **aseq,int start_num, int start_seq);
 int **read_alignment2int(char *filename,int start_num,int start_seq);
 
 void counter(int b);
@@ -1482,7 +1472,6 @@ void freq(int **ali,double **f,int *num_gaps,int *effindiarr,double gap_threshol
 
 	/* find the number of frequences at each position */
 	effnumind=0;
-	#pragma omp parallel for private(i, count) reduction(+:effnumind) // Pf612
 	for(j=1;j<=alilen;j++){
 		for(i=0;i<=20;i++) count[i]=0;
 		for(i=1;i<=nal;i++) {
@@ -1532,7 +1521,6 @@ double **sigmaf(double **f)
 		fprintf(stderr, "letters not defined previously\n");
 		exit(0);
 			  }
-	#pragma omp parallel for private(i) // Pf612
 	for(j=1;j<=alilen;j++) {
 		if(letters[j]==0) {
 			fprintf(stderr,"The column contains no letters:%d\n",j);
@@ -1548,9 +1536,10 @@ double **sigmaf(double **f)
 }
 
 int totalw;
+double *oaf_ip, *h_oaf_ip; /*unweighted,henikoff frequency at position ip */
 double *overall_freq(int **ali, int startp, int endp, int *mark);
 double *overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt);
-double *h_weight(int **ali, int ip, double *oaf_ip_out, double *h_oaf_ip_out)
+double *h_weight(int **ali, int ip)
 {
 	double *hwt;
 	int count[21];
@@ -1560,12 +1549,11 @@ double *h_weight(int **ali, int ip, double *oaf_ip_out, double *h_oaf_ip_out)
 	int *mark;
 	int gapcount,totalcount,wsign;
 
-        hwt = dvector(0, nal);
-        mark = ivector(0, nal);
-        for(i=1;i<=20;i++) {
-                oaf_ip_out[i] = 0.0;
-                h_oaf_ip_out[i] = 0.0;
-        }
+	hwt = dvector(0, nal);
+	mark = ivector(0, nal);
+	oaf_ip = dvector(0,20);
+	h_oaf_ip = dvector(0,20);
+	for(i=1;i<=20;i++) h_oaf_ip[i] = 0;
 
 	/* mark the sequences with gaps */
 	for(i=1;i<=nal;i++) {
@@ -1575,28 +1563,26 @@ double *h_weight(int **ali, int ip, double *oaf_ip_out, double *h_oaf_ip_out)
 			    }
 	
 	/* find the maxstart and miniend positions */
-        maxstart = 1;
-        #pragma omp parallel for private(j,maxs) reduction(max:maxstart)
-        for(i=1;i<=nal;i++){
-                if(mark[i]==0) continue;
-                maxs = 1;
-                for(j=1;j<=alilen;j++) {
-                        if(ali[i][j]==0) maxs++;
-                        if(ali[i][j]>0) break;
-                                        }
-                if(maxstart<maxs) maxstart = maxs;
-                           }
-        miniend = alilen;
-        #pragma omp parallel for private(j,minie) reduction(min:miniend)
-        for(i=1;i<=nal;i++){
-                if(!mark[i]) continue;
-                minie = alilen;
-                for(j=alilen;j>0;j--) {
-                        if(ali[i][j]==0) minie--;
-                        if(ali[i][j]>0) break;
-                                      }
-                if(miniend>minie) miniend = minie;
-                           }
+	maxstart = 1;
+	for(i=1;i<=nal;i++){
+		if(mark[i]==0) continue;
+		maxs = 1;
+ 	    	for(j=1;j<=alilen;j++) {
+			if(ali[i][j]==0) maxs++;
+			if(ali[i][j]>0) break;
+					}
+		if(maxstart<maxs) maxstart = maxs;
+			   }
+	miniend = alilen;
+	for(i=1;i<=nal;i++){
+		if(!mark[i]) continue;
+		minie = alilen;
+		for(j=alilen;j>0;j--) {
+			if(ali[i][j]==0) minie--;
+			if(ali[i][j]>0) break;
+				      }
+		if(miniend>minie) miniend = minie;
+ 			   }
 	/* NEW: 05/06/03 */
 	if(maxstart > miniend) maxstart = miniend;
 
@@ -1604,24 +1590,13 @@ double *h_weight(int **ali, int ip, double *oaf_ip_out, double *h_oaf_ip_out)
         j=0;
         for(i=1;i<=nal;i++) {if(mark[i]>0) j++;}
         if(j==1) {
-                double *tmp_h;
-                double *tmp_o;
                 for(i=1;i<=nal;i++) hwt[i]=mark[i];
-                tmp_h = overall_freq_wgt(ali,maxstart,miniend,mark,hwt);
-                tmp_o = overall_freq(ali,1,alilen,mark);
-                for(i=1;i<=20;i++) {
-                        h_oaf_ip_out[i] = tmp_h[i];
-                        oaf_ip_out[i] = tmp_o[i];
-                }
-                /* temporary arrays allocated with dvector; freed implicitly */
-                (void)tmp_h;
-                (void)tmp_o;
-                free(mark-1);
+                h_oaf_ip = overall_freq_wgt(ali,maxstart,miniend,mark,hwt);
+                oaf_ip = overall_freq(ali,1,alilen,mark);
                 return hwt;
                  }
 
 	for(i=1;i<=nal;i++) hwt[i]=0;
-	#pragma omp parallel for private(i, count, amtypes, gapcount, totalcount) // Pf612
 	for(j=maxstart;j<=miniend;j++){
 		
 		amtypes = 0;
@@ -1673,18 +1648,9 @@ double *h_weight(int **ali, int ip, double *oaf_ip_out, double *h_oaf_ip_out)
 				   }
 		     }
 
-        {
-                double *tmp_h = overall_freq_wgt(ali,maxstart,miniend,mark,hwt);
-                double *tmp_o = overall_freq(ali,1,alilen,mark);
-                for(i=1;i<=20;i++) {
-                        h_oaf_ip_out[i] = tmp_h[i];
-                        oaf_ip_out[i] = tmp_o[i];
-                }
-                (void)tmp_h;
-                (void)tmp_o;
-        }
-        free(mark-1);
-        return hwt;
+	h_oaf_ip = overall_freq_wgt(ali,maxstart,miniend,mark,hwt);
+	oaf_ip = overall_freq(ali,1,alilen,mark);
+	return hwt;
 }
 	
 double **u_oaf,**h_oaf; /* unweighted and henikoff overall frequency */
@@ -1697,16 +1663,13 @@ void h_freq(int **ali, double **f, double **hfr)
 	u_oaf = dmatrix(0,20,0,alilen);
 	h_oaf = dmatrix(0,20,0,alilen);
 	
-       #pragma omp parallel for private(i, hwt, sumofweight) // Pf612
-       for(j=1;j<=alilen;j++) {
-               double oaf_ip_loc[21];
-               double h_oaf_ip_loc[21];
-               if(f[0][j]==INDI) {hfr[0][j]=INDI;continue;}
-               hwt = h_weight(ali, j, oaf_ip_loc, h_oaf_ip_loc); /* assign position specific weight */
-               for(i=1;i<=20;i++) {
-                       u_oaf[i][j]=oaf_ip_loc[i];
-                       h_oaf[i][j]=h_oaf_ip_loc[i];
-                                  }
+	for(j=1;j<=alilen;j++) {
+		if(f[0][j]==INDI) {hfr[0][j]=INDI;continue;}
+		hwt = h_weight(ali, j); /* assign position specific weight */
+		for(i=1;i<=20;i++) {
+			u_oaf[i][j]=oaf_ip[i];
+			h_oaf[i][j]=h_oaf_ip[i];
+				   }
 
  		sumofweight = 0;
 		for(i=1;i<=nal;i++) {
@@ -1728,7 +1691,6 @@ void entro_conv(double **f, int **ali, double *econv)
 {
 	int i,j;
 
-	#pragma omp parallel for private(i) // Pf612
 	for (j=1;j<=alilen;j++){
 		econv[j]=0;
 		if(f[0][j]==INDI) {econv[j]=INDI;continue;}
@@ -1752,7 +1714,6 @@ double *overall_freq(int **ali, int startp, int endp, int *mark)
 		fprintf(stderr, "start position larger than ending position\n");
 		exit(1);
 			}
-	#pragma omp parallel for private(i, gapcount, totalcount) reduction(+:total) // Pf612
 	for(j=startp;j<=endp;j++) {
 		/* excluding those that have >50% gaps*/
 		gapcount=totalcount=0;
@@ -1793,7 +1754,6 @@ double *overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt)
         if(startp>endp) {
                 fprintf(stderr, "start position larger than ending position\n");                exit(1);
                         }
-	#pragma omp parallel for private(i, gapcount, totalcount) reduction(+:total) // Pf612
         for(j=startp;j<=endp;j++) {
 		/* excluding those that have >50% gaps*/
 		gapcount=totalcount=0;
@@ -1836,7 +1796,6 @@ void ic_freq(int **ali, double **f, double **icf)
                         icf[i][j]=0;
         for(i=0;i<=nal;i++) mark[i]=0;
 
-	#pragma omp parallel for private(i, k, ele) // Pf612
         for(j=1;j<=alilen;j++){
                 if(f[0][j]==INDI) {icf[0][j]=INDI;continue;}
                 for(k=0;k<=20;++k)effnu[k]=0;
@@ -1861,9 +1820,7 @@ void variance_conv(double **f, int **ali, double **oaf, double *vconv)
 {
 	int i,j;
 
-	#pragma omp parallel for private(i) // Pf612
 	for(i=1;i<=alilen;i++) vconv[i]=0;
-	#pragma omp parallel for private(i) // Pf612
 	for(j=1;j<=alilen;j++) {
 		if(f[0][j]==INDI) {vconv[j]=INDI;continue;}
 		for(i=1;i<=20;i++) {
@@ -1900,7 +1857,6 @@ void pairs_conv(double **f,int **ali,int **matrix1,int indx,double *pconv)
 				    }
 				      }
 	
-	#pragma omp parallel for private(i, k) // Pf612
 	for(j=1;j<=alilen;j++) {
 		if(f[0][j]==INDI){pconv[j]=INDI; continue;}
 		pconv[j]=0;
