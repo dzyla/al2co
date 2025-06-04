@@ -260,10 +260,11 @@ int main(int argc, char *argv[])
 	consv=dvector(0,alilen);
 	consvall=dmatrix(0,NUM_METHOD,0,alilen);/* for all 9 methods */
 	csv_index=ivector(0,alilen);
-	for(i=1;i<=MAX_WINDOW;i++)
-		for(j=1;j<=NUM_METHOD;j++)
-			for(k=0;k<=alilen;k++)
-				convinfo.conv[i][j][k]=INDI;
+        #pragma omp parallel for collapse(3) private(i,j,k)
+        for(i=1;i<=MAX_WINDOW;i++)
+                for(j=1;j<=NUM_METHOD;j++)
+                        for(k=0;k<=alilen;k++)
+                                convinfo.conv[i][j][k]=INDI;
 
 	/* get the frequencies */
 	freq(alignment,convinfo.fq,convinfo.ngap,convinfo.eff_indi_arr,ARG_G);
@@ -1574,26 +1575,28 @@ double *h_weight(int **ali, int ip)
 			    }
 	
 	/* find the maxstart and miniend positions */
-	maxstart = 1;
-	for(i=1;i<=nal;i++){
-		if(mark[i]==0) continue;
-		maxs = 1;
- 	    	for(j=1;j<=alilen;j++) {
-			if(ali[i][j]==0) maxs++;
-			if(ali[i][j]>0) break;
-					}
-		if(maxstart<maxs) maxstart = maxs;
-			   }
-	miniend = alilen;
-	for(i=1;i<=nal;i++){
-		if(!mark[i]) continue;
-		minie = alilen;
-		for(j=alilen;j>0;j--) {
-			if(ali[i][j]==0) minie--;
-			if(ali[i][j]>0) break;
-				      }
-		if(miniend>minie) miniend = minie;
- 			   }
+        maxstart = 1;
+        #pragma omp parallel for private(j,maxs) reduction(max:maxstart)
+        for(i=1;i<=nal;i++){
+                if(mark[i]==0) continue;
+                maxs = 1;
+                for(j=1;j<=alilen;j++) {
+                        if(ali[i][j]==0) maxs++;
+                        if(ali[i][j]>0) break;
+                                        }
+                if(maxstart<maxs) maxstart = maxs;
+                           }
+        miniend = alilen;
+        #pragma omp parallel for private(j,minie) reduction(min:miniend)
+        for(i=1;i<=nal;i++){
+                if(!mark[i]) continue;
+                minie = alilen;
+                for(j=alilen;j>0;j--) {
+                        if(ali[i][j]==0) minie--;
+                        if(ali[i][j]>0) break;
+                                      }
+                if(miniend>minie) miniend = minie;
+                           }
 	/* NEW: 05/06/03 */
 	if(maxstart > miniend) maxstart = miniend;
 
