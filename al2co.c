@@ -889,143 +889,84 @@ return t;
 
 int am2num_c(c)
 {
-switch (c) {
-           	 case 'W':
-                	c=1; break;
-		 case 'w':
-			c=26; break;
-           	 case 'F': 
-                	c=2; break;
-                 case 'f':
-			c=27; break;
-           	 case 'Y': 
-                	c=3; break;
-		 case 'y':
-                        c=28; break;
-           	 case 'M': 
-                	c=4; break;
-		 case 'm':
-                        c=29; break;
-           	 case 'L': 
-                	c=5; break;
-		 case 'l':
-                        c=30; break;
-           	 case 'I': 
-          		c=6; break;
-		 case 'i':
-                        c=31; break;
-           	 case 'V': 
-           		c=7; break;
-		 case 'v':
-                        c=32; break;
-          	 case 'A': 
-			c=8; break;
-		 case 'a':
-                        c=33; break; 
-           	 case 'C': 
-                	c=9; break;
-		 case 'c':
-                        c=34; break;
-		 case 'G': 
-			c=10; break;
-		 case 'g':
-                        c=35; break;
-           	 case 'P': 
-             	 	c=11; break;
-		 case 'p':
-                        c=36; break;
-       		 case 'T': 
-			c=12; break;
-		 case 't':
-                        c=37; break;
-	         case 'S': 
-			c=13; break;
-		 case 's':
-                        c=38; break;
-           	 case 'N': 
-                	c=14; break;
-		 case 'n':
-                        c=39; break;
-           	 case 'Q': 
-                	c=15; break;
-		 case 'q':
-                        c=40; break;
-           	 case 'D': 
-                	c=16; break;
-		 case 'd':
-                        c=41; break;
-           	 case 'E': 
-                	c=17; break;
-		 case 'e':
-                        c=42; break;
-           	 case 'H': 
-                	c=18; break;
-		 case 'h':
-                        c=43; break;
-           	 case 'R': 
-                	c=19; break;
-		 case 'r':
-                        c=44; break;
-           	 case 'K': 
-                	c=20; break;
-		 case 'k':
-                        c=45; break;
-           	 default : 
-			c=0; 
-		}
-return (c);
+	switch (c) {
+		case 'W': return 1;
+		case 'w': return 26;
+		case 'F': return 2;
+		case 'f': return 27;
+		case 'Y': return 3;
+		case 'y': return 28;
+		case 'M': return 4;
+		case 'm': return 29;
+		case 'L': return 5;
+		case 'l': return 30;
+		case 'I': return 6;
+		case 'i': return 31;
+		case 'V': return 7;
+		case 'v': return 32;
+		case 'A': return 8;
+		case 'a': return 33;
+		case 'C': return 9;
+		case 'c': return 34;
+		case 'G': return 10;
+		case 'g': return 35;
+		case 'P': return 11;
+		case 'p': return 36;
+		case 'T': return 12;
+		case 't': return 37;
+		case 'S': return 13;
+		case 's': return 38;
+		case 'N': return 14;
+		case 'n': return 39;
+		case 'Q': return 15;
+		case 'q': return 40;
+		case 'D': return 16;
+		case 'd': return 41;
+		case 'E': return 17;
+		case 'e': return 42;
+		case 'H': return 18;
+		case 'h': return 43;
+		case 'R': return 19;
+		case 'r': return 44;
+		case 'K': return 20;
+		case 'k': return 45;
+		case 'B': return 21;
+		case 'b': return 46;
+		case 'Z': return 22;
+		case 'z': return 47;
+		case 'X': return 23;
+		case 'x': return 48;
+		case '*': return 24;
+		case '-': case '.': return 0;
+		default: return 25;
+	}
 }
-
-
 int am2num(c)
 {
-switch (c) {
-           	 case 'W': case 'w':
-                	c=1; break;
-           	 case 'F': case 'f':
-                	c=2; break;
-           	 case 'Y': case 'y':
-                	c=3; break;
-           	 case 'M': case 'm':
-                	c=4; break;
-           	 case 'L': case 'l':
-                	c=5; break;
-           	 case 'I': case 'i':
-          		c=6; break;
-           	 case 'V': case 'v':
-           		c=7; break;
-          	 case 'A': case 'a': 
-			c=8; break;
-           	 case 'C': case 'c':
-                	c=9; break;
-		 case 'G': case 'g':
-			c=10; break;
-           	 case 'P': case 'p':
-             	 	c=11; break;
-       		 case 'T': case 't':
-			c=12; break;
-	         case 'S': case 's':
-			c=13; break;
-           	 case 'N': case 'n':
-                	c=14; break;
-           	 case 'Q': case 'q':
-                	c=15; break;
-           	 case 'D': case 'd':
-                	c=16; break;
-           	 case 'E': case 'e':
-                	c=17; break;
-           	 case 'H': case 'h':
-                	c=18; break;
-           	 case 'R': case 'r':
-                	c=19; break;
-           	 case 'K': case 'k':
-                	c=20; break;
-           	 default : 
-			c=0; 
-		}
-return (c);
+	switch (c) {
+		case 'A': case 'a': return 8;
+		case 'C': case 'c': return 9;
+		case 'D': case 'd': return 16;
+		case 'E': case 'e': return 17;
+		case 'F': case 'f': return 2;
+		case 'G': case 'g': return 10;
+		case 'H': case 'h': return 18;
+		case 'I': case 'i': return 6;
+		case 'K': case 'k': return 20;
+		case 'L': case 'l': return 5;
+		case 'M': case 'm': return 4;
+		case 'N': case 'n': return 14;
+		case 'P': case 'p': return 11;
+		case 'Q': case 'q': return 15;
+		case 'R': case 'r': return 19;
+		case 'S': case 's': return 13;
+		case 'T': case 't': return 12;
+		case 'V': case 'v': return 7;
+		case 'W': case 'w': return 1;
+		case 'Y': case 'y': return 3;
+		default: return 0;
+	}
 }
-
 int am2numBZX(c)
 {
 switch (c) {
@@ -1433,34 +1374,32 @@ return neff;
 
 
 double effective_number_nogaps(int **ali, int *marks, int n, int start, int end){
-
-/* from the alignment of n sequences ali[1..n][1..l]
-calculates effective number of sequences that are marked by 1 in mark[1..n]
-for the segment of positions ali[][start..end]
-Neff=ln(1-0.05*N-of-different-letters-per-site)/ln(0.95)
-*/
-
 int i,k,a,flag;
-int amco[21],lettercount=0,sitecount=0;
+int amco[21];
+int lettercount=0,sitecount=0;
 double letpersite=0,neff;
 
 for(k=start;k<=end;++k){
-	flag=0;for(i=1;i<=n;++i)if(marks[i]==1 && ali[i][k]==0)flag=1;
-	if(flag==1)continue;
-	for(a=0;a<=20;++a)amco[a]=0;
-	for(i=1;i<=n;++i)if(marks[i]==1)amco[ali[i][k]]++;
-	flag=0;for(a=1;a<=20;++a)if(amco[a]>0){flag=1;lettercount++;}
-	if(flag==1)sitecount++;
-		       }
+	for(a=0;a<=20;++a) amco[a]=0;
+	flag=0;
+	for(i=1;i<=n;++i){
+		if(marks[i]){
+			int v = ali[i][k];
+			if(v==0) { flag=1; break; }
+			amco[v]++;
+		}
+	}
+	if(flag) continue;
+	flag=0;
+	for(a=1;a<=20;++a) if(amco[a]>0) { flag=1; lettercount++; }
+	if(flag) sitecount++;
+}
 if(sitecount==0)letpersite=0;
 else letpersite=1.0*lettercount/sitecount;
 
-
 neff=-log(1.0-0.05*letpersite)/0.05129329438755;
 return neff;
-}
-
-int *letters;
+}int *letters;
 
 void freq(int **ali,double **f,int *num_gaps,int *effindiarr,double gap_threshold)
 {
@@ -1543,7 +1482,7 @@ double *h_weight(int **ali, int ip)
 {
 	double *hwt;
 	int count[21];
-        int amtypes;
+	int amtypes;
 	int i,j,k;
 	int maxstart, maxs, miniend,minie;
 	int *mark;
@@ -1555,105 +1494,93 @@ double *h_weight(int **ali, int ip)
 	h_oaf_ip = dvector(0,20);
 	for(i=1;i<=20;i++) h_oaf_ip[i] = 0;
 
-	/* mark the sequences with gaps */
 	for(i=1;i<=nal;i++) {
-	        /* NEW: fix a typo 05/06/03 */
-		if((ali[i][ip]>0&&ali[i][ip]<=20)||(ali[i][ip]>25&&ali[i][ip]<=45)) mark[i]=1;
-		else if (ali[i][ip]==0)mark[i]=0;
-			    }
-	
-	/* find the maxstart and miniend positions */
+		int v = ali[i][ip];
+		mark[i] = ((v>0&&v<=20)||(v>25&&v<=45)) ? 1 : 0;
+	}
+
 	maxstart = 1;
+	miniend = alilen;
 	for(i=1;i<=nal;i++){
 		if(mark[i]==0) continue;
 		maxs = 1;
- 	    	for(j=1;j<=alilen;j++) {
+		for(j=1;j<=alilen;j++) {
 			if(ali[i][j]==0) maxs++;
-			if(ali[i][j]>0) break;
-					}
+			else break;
+		}
 		if(maxstart<maxs) maxstart = maxs;
-			   }
-	miniend = alilen;
-	for(i=1;i<=nal;i++){
-		if(!mark[i]) continue;
+
 		minie = alilen;
 		for(j=alilen;j>0;j--) {
 			if(ali[i][j]==0) minie--;
-			if(ali[i][j]>0) break;
-				      }
+			else break;
+		}
 		if(miniend>minie) miniend = minie;
- 			   }
-	/* NEW: 05/06/03 */
+	}
 	if(maxstart > miniend) maxstart = miniend;
 
-/* special case where only one site is not gap */
-        j=0;
-        for(i=1;i<=nal;i++) {if(mark[i]>0) j++;}
-        if(j==1) {
-                for(i=1;i<=nal;i++) hwt[i]=mark[i];
-                h_oaf_ip = overall_freq_wgt(ali,maxstart,miniend,mark,hwt);
-                oaf_ip = overall_freq(ali,1,alilen,mark);
-                return hwt;
-                 }
-
+	j=0;
+	for(i=1;i<=nal;i++) {if(mark[i]>0) j++;}
+	if(j==1) {
+		for(i=1;i<=nal;i++) hwt[i] = mark[i];
+		free((char *) (h_oaf_ip+0-NR_END));
+		free((char *) (oaf_ip+0-NR_END));
+		oaf_ip = overall_freq(ali,1,alilen,mark);
+		h_oaf_ip = overall_freq_wgt(ali,maxstart,miniend,mark,hwt);
+		free((char *) (mark+0-NR_END));
+		return hwt;
+	}
 	for(i=1;i<=nal;i++) hwt[i]=0;
-	for(j=maxstart;j<=miniend;j++){
-		
-		amtypes = 0;
-		for(i=0;i<=20;i++) count[i]=0;
-		for(i=1;i<=nal;i++){
+
+	for(j=maxstart;j<=miniend;j++) {
+		gapcount=0;
+		totalcount=0;
+		for(i=1;i<=nal;i++) {
 			if(mark[i]==0) continue;
-			if(ali[i][j]>=0&&ali[i][j]<=20) count[ali[i][j]]++;
-			else if(ali[i][j]>25&&ali[i][j]<=45) count[ali[i][j]-25]++;
-				   }
-		for(i=0;i<=20;i++) {
-			if(count[i]>0) amtypes++;
-				   }
-		if(amtypes==1) continue; /* identical positions are excluded */
-		gapcount=totalcount=0;
-		for(i=1;i<=nal;i++){
-			if(mark[i]==0) continue;
-			if(ali[i][j]==0) gapcount++;
 			totalcount++;
-				   }
-		if(gapcount>totalcount*0.5) continue;/*gap>50% excluded*/
+			if(ali[i][j]==0) gapcount++;
+		}
+		if(gapcount>totalcount*0.5) continue;
 
-		for(i=1;i<=nal;i++){
+		wsign=0;
+		for(i=1;i<=20;i++) count[i]=0;
+		for(i=1;i<=nal;i++) {
 			if(mark[i]==0) continue;
-			if(ali[i][j]>=0&&ali[i][j]<=20) {
-				if(count[ali[i][j]]>0)  {
-				    hwt[i]+=1.0/(count[ali[i][j]]*amtypes);
-							}
-						       }
-			if(ali[i][j]>25&&ali[i][j]<=45) {
-				if(count[ali[i][j]-25]>0)  {
-				    hwt[i]+=1.0/(count[ali[i][j]-25]*amtypes);
-							   }
-							}
-				   }
-				}
-	/* test if all henikoff weights are zero for all sequences */
-	wsign=0;
-	for(i=1;i<=nal;i++) {
-		if(hwt[i]>0) { wsign=1;break;}
-			    }
-	gapcount=0;
-	if(wsign==0) {
-		for(i=1;i<=nal;i++){
-			if(ali[i][ip]==0) gapcount++;
-				   }
-		if(gapcount==nal){fprintf(stderr, "This position contains only gaps\n");exit(0);}
-		for(i=1;i<=nal;i++){
-			if(ali[i][ip]!=0) hwt[i]=1.0/(nal-gapcount);
-				   }
-		     }
+			int v = ali[i][j];
+			if(v>0&&v<=20) {
+				count[v]++;
+				wsign=1;
+			}
+			else if(v>25&&v<=45) {
+				count[v-25]++;
+				wsign=1;
+			}
+		}
 
+		if(wsign==0) continue;
+
+		amtypes=0;
+		for(k=1;k<=20;k++) if(count[k]>0) amtypes++;
+		if(amtypes==1) continue;
+
+		for(i=1;i<=nal;i++) {
+			if(mark[i]==0) continue;
+			int v = ali[i][j];
+			if(v>0&&v<=20) {
+				hwt[i] += 1.0/(amtypes * count[v]);
+			}
+			else if(v>25&&v<=45) {
+				hwt[i] += 1.0/(amtypes * count[v-25]);
+			}
+		}
+	}
+	free((char *) (h_oaf_ip+0-NR_END));
+	free((char *) (oaf_ip+0-NR_END));
 	h_oaf_ip = overall_freq_wgt(ali,maxstart,miniend,mark,hwt);
 	oaf_ip = overall_freq(ali,1,alilen,mark);
+	free((char *) (mark+0-NR_END));
 	return hwt;
 }
-	
-double **u_oaf,**h_oaf; /* unweighted and henikoff overall frequency */
 void h_freq(int **ali, double **f, double **hfr)
 {
 	int i,j;	
@@ -1697,14 +1624,12 @@ void entro_conv(double **f, int **ali, double *econv)
 		for(i=1;i<=20;i++) {
 			if(f[i][j]==0) continue;
 			econv[j]+=f[i][j]*log(f[i][j]);
-				   }
-				}
+		}
+	}
 }
-		
 double *overall_freq(int **ali, int startp, int endp, int *mark)
 {
 	double *oaf;
-	int gapcount,totalcount;
 	int total=0;
 	int i,j;
 
@@ -1713,123 +1638,130 @@ double *overall_freq(int **ali, int startp, int endp, int *mark)
 	if(startp>endp) {
 		fprintf(stderr, "start position larger than ending position\n");
 		exit(1);
-			}
+	}
 	for(j=startp;j<=endp;j++) {
-		/* excluding those that have >50% gaps*/
-		gapcount=totalcount=0;
+		int gapcount=0,totalcount=0;
 		for(i=1;i<=nal;i++){
 			if(mark[i]==0) continue;
 			totalcount++;
 			if(ali[i][j]==0) gapcount++;
-				   }
+		}
 		if(gapcount>totalcount*0.5) continue;
 
 		for(i=1;i<=nal;i++) {
 			if(mark[i]==0) continue;
-			if(ali[i][j]>0&&ali[i][j]<=20) {
-				oaf[ali[i][j]]+=1;
+			int v = ali[i][j];
+			if(v>0&&v<=20) {
+				oaf[v]+=1;
 				total++;
-							}
-			if(ali[i][j]>25&&ali[i][j]<=45) {
-				oaf[ali[i][j]-25]+=1;
+			}
+			else if(v>25&&v<=45) {
+				oaf[v-25]+=1;
 				total++;
-							}
-				  }
-				}
-	for(i=1;i<=20;i++) {
-		oaf[i]=oaf[i]/total;
-			   }		
+			}
+		}
+	}
+	for(i=1;i<=20;i++){
+		if(total==0) oaf[i]=0;
+		else oaf[i]=oaf[i]/total;
+	}
 	return oaf;
 }
-
 double *overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt)
 {
-        double *oaf;
-        double total=0;
-	int totalcount,gapcount;
-        int i,j;
+	double *oaf;
+	double total=0;
+	int i,j;
 
-        oaf = dvector(0,20);
-        for(i=1;i<=20;i++) oaf[i]=0;
-        if(startp>endp) {
-                fprintf(stderr, "start position larger than ending position\n");                exit(1);
-                        }
-        for(j=startp;j<=endp;j++) {
-		/* excluding those that have >50% gaps*/
-		gapcount=totalcount=0;
+	oaf = dvector(0,20);
+	for(i=1;i<=20;i++) oaf[i]=0;
+	if(startp>endp) {
+		fprintf(stderr, "start position larger than ending position\n");
+		exit(1);
+	}
+	for(j=startp;j<=endp;j++) {
+		int gapcount=0,totalcount=0;
 		for(i=1;i<=nal;i++){
 			if(mark[i]==0) continue;
 			totalcount++;
 			if(ali[i][j]==0) gapcount++;
-				   }
+		}
 		if(gapcount>totalcount*0.5) continue;
-                for(i=1;i<=nal;i++) {
-                        if(mark[i]==0) continue;
-                        if(ali[i][j]>0&&ali[i][j]<=20) {
-                                oaf[ali[i][j]]+=wgt[i];
-                                total+=wgt[i];
-                                                        }
-                        if(ali[i][j]>25&&ali[i][j]<=45) {
-                                oaf[ali[i][j]-25]+=wgt[i];
-                                total+=wgt[i];
-                                                        }
-                                  }
-	if(total==0) fprintf(stderr,"total=0\n");
-                                }
-        for(i=1;i<=20;i++) {
-                oaf[i]=oaf[i]/total;
-                           }
-        return oaf;
+		for(i=1;i<=nal;i++) {
+			if(mark[i]==0) continue;
+			int v = ali[i][j];
+			if(v>0&&v<=20) {
+				oaf[v]+=wgt[i];
+				total+=wgt[i];
+			}
+			else if(v>25&&v<=45) {
+				oaf[v-25]+=wgt[i];
+				total+=wgt[i];
+			}
+		}
+	}
+	for(i=1;i<=20;i++){
+		if(total==0) oaf[i]=0;
+		else oaf[i]=oaf[i]/total;
+	}
+	return oaf;
 }
-
 void ic_freq(int **ali, double **f, double **icf)
 {
-        int i,j,k;
-        int ele;
-        double  *effnu;
-        int *mark;
+	int i,j,k;
+	int ele;
+	double  *effnu;
+	int *mark;
 
-        mark = ivector(0,nal+10);
-        effnu = dvector(0,20);
-        for(i=0;i<=20;i++)
-                for(j=1;j<=alilen;j++)
-                        icf[i][j]=0;
-        for(i=0;i<=nal;i++) mark[i]=0;
+	mark = ivector(0,nal+10);
+	effnu = dvector(0,20);
+	for(i=0;i<=20;i++)
+		for(j=1;j<=alilen;j++)
+			icf[i][j]=0;
+	for(i=0;i<=nal;i++) mark[i]=0;
 
-        for(j=1;j<=alilen;j++){
-                if(f[0][j]==INDI) {icf[0][j]=INDI;continue;}
-                for(k=0;k<=20;++k)effnu[k]=0;
+	int **k_marks = (int**)malloc(21 * sizeof(int*));
+	for(k=1;k<=20;k++) k_marks[k] = (int*)malloc((nal+10) * sizeof(int));
 
-                int counts[21];
-                for(k=1;k<=20;k++) counts[k] = 0;
-                for(i=1;i<=nal;++i){
-                        ele=ali[i][j];
-                        if(ele>=1 && ele<=20) counts[ele]++;
-                        ele=ali[i][j]-25;
-                        if(ele>=1 && ele<=20) counts[ele]++;
-                }
+	for(j=1;j<=alilen;j++){
+		if(f[0][j]==INDI) {icf[0][j]=INDI;continue;}
+		for(k=0;k<=20;++k)effnu[k]=0;
 
-                for(k=1;k<=20;++k){
-                        if(counts[k] == 0) {
-                                effnu[k] = 0;
-                                continue;
-                        }
-                        for(i=1;i<=nal;++i){
-                                mark[i]=0;
-                                ele=ali[i][j];
-                                if(ele==k)mark[i]=1;
-                                ele=ali[i][j]-25;
-                                if(ele==k) mark[i]=1;
-                                         }
-                        effnu[k]=effective_number_nogaps(ali,mark,nal,1,alilen);
-                        effnu[0]+=effnu[k];
-                                  }
-                if(effnu[0]==0){fprintf(stderr,"all counts are zeros at the column %d: FATAL\n",j);exit(0);}
-                for(k=1;k<=20;k++) effnu[k]=effnu[k]/effnu[0];
-                for(k=1;k<=20;k++) icf[k][j] = effnu[k];
-                               }
+		int counts[21];
+		for(k=1;k<=20;k++) {
+			counts[k] = 0;
+			for(i=0;i<=nal;i++) k_marks[k][i] = 0;
+		}
+
+		for(i=1;i<=nal;++i){
+			ele=ali[i][j];
+			if(ele>=1 && ele<=20) {
+				counts[ele]++;
+				k_marks[ele][i] = 1;
+			}
+			ele=ali[i][j]-25;
+			if(ele>=1 && ele<=20) {
+				counts[ele]++;
+				k_marks[ele][i] = 1;
+			}
+		}
+
+		for(k=1;k<=20;++k){
+			if(counts[k] == 0) {
+				effnu[k] = 0;
+				continue;
+			}
+			effnu[k]=effective_number_nogaps(ali,k_marks[k],nal,1,alilen);
+			effnu[0]+=effnu[k];
+		}
+		if(effnu[0]==0){fprintf(stderr,"all counts are zeros at the column %d: FATAL\n",j);exit(0);}
+		for(k=1;k<=20;k++) effnu[k]=effnu[k]/effnu[0];
+		for(k=1;k<=20;k++) icf[k][j] = effnu[k];
+	}
+
+	for(k=1;k<=20;k++) free(k_marks[k]);
+	free(k_marks);
 }
-
 void variance_conv(double **f, int **ali, double **oaf, double *vconv)
 {
 	int i,j;
