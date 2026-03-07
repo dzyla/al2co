@@ -1398,10 +1398,10 @@ Neff=ln(1-0.05*N-of-different-letters-per-site)/ln(0.95)
 */
 
 int i,k,a,flag,ngc;
-int *amco,lettercount=0,sitecount=0,gsitecount=0;
+int amco[21],lettercount=0,sitecount=0,gsitecount=0;
 int *nogaps;
 double letpersite=0,neff,randomcount=0.0;
-amco=ivector(0,20);
+
 nogaps=ivector(0,n);
 for(i=0;i<=n;++i)nogaps[i]=0;
 for(k=start;k<=end;++k){
@@ -1441,9 +1441,9 @@ Neff=ln(1-0.05*N-of-different-letters-per-site)/ln(0.95)
 */
 
 int i,k,a,flag;
-int *amco,lettercount=0,sitecount=0;
+int amco[21],lettercount=0,sitecount=0;
 double letpersite=0,neff;
-amco=ivector(0,20);
+
 for(k=start;k<=end;++k){
 	flag=0;for(i=1;i<=n;++i)if(marks[i]==1 && ali[i][k]==0)flag=1;
 	if(flag==1)continue;
@@ -1799,7 +1799,21 @@ void ic_freq(int **ali, double **f, double **icf)
         for(j=1;j<=alilen;j++){
                 if(f[0][j]==INDI) {icf[0][j]=INDI;continue;}
                 for(k=0;k<=20;++k)effnu[k]=0;
+
+                int counts[21];
+                for(k=1;k<=20;k++) counts[k] = 0;
+                for(i=1;i<=nal;++i){
+                        ele=ali[i][j];
+                        if(ele>=1 && ele<=20) counts[ele]++;
+                        ele=ali[i][j]-25;
+                        if(ele>=1 && ele<=20) counts[ele]++;
+                }
+
                 for(k=1;k<=20;++k){
+                        if(counts[k] == 0) {
+                                effnu[k] = 0;
+                                continue;
+                        }
                         for(i=1;i<=nal;++i){
                                 mark[i]=0;
                                 ele=ali[i][j];
