@@ -2,13 +2,29 @@ import subprocess
 import tempfile
 import os
 import io
+import stat
 from Bio import AlignIO
 from Bio.Align import MultipleSeqAlignment
 
-def run_al2co(msa: MultipleSeqAlignment, executable: str = './al2co', **kwargs):
+def run_al2co(msa: MultipleSeqAlignment, **kwargs):
     """
     Run al2co on a BioPython MultipleSeqAlignment object and return the conservation scores.
     """
+    executable = os.path.join(os.path.dirname(__file__), 'al2co')
+    
+    if not os.path.exists(executable):
+        raise FileNotFoundError(
+            f"Native AL2CO executable not found at {executable}. "
+            "Ensure the package was installed correctly via pip to compile the binary."
+        )
+
+    # Ensure it's executable
+    try:
+        st = os.stat(executable)
+        os.chmod(executable, st.st_mode | stat.S_IEXEC)
+    except Exception:
+        pass
+
     sio = io.StringIO()
     AlignIO.write(msa, sio, "clustal")
     content = sio.getvalue()
@@ -32,7 +48,7 @@ def run_al2co(msa: MultipleSeqAlignment, executable: str = './al2co', **kwargs):
             args.extend(['-' + k, str(v)])
 
     try:
-        result = subprocess.run(args, check=True, capture_output=True, text=True)
+        subprocess.run(args, check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
         os.remove(temp_in)
         if os.path.exists(temp_out):

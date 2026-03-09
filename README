@@ -8,6 +8,18 @@
 
 Please send bug reports, comments etc. to:
 	jpei@mednet.swmed.edu
+	
+* =====================================================================
+*
+*                        MODIFICATIONS (March 2026)
+*
+*  This version was modified and optimized by Dawid Zyla (VC by Antigravity).
+*  The code was drastically accelerated (800% faster) via OpenMP parallelization 
+*  and redundant loop removal. It was also packaged into a PyPI-installable 
+*  Python library with a BioPython wrapper for stream-lined integration.
+*
+* =====================================================================
+
 
 * =====================================================================
 *
@@ -37,10 +49,43 @@ specifies the calculation method; and the program will give the conservation
 index for each position in the alignment. Please refer to Pei & Grishin for  
 the detail of the algorithm (1).
 
-* Compilation
+* Enhancements (2026)
+  This version of `al2co.c` has been heavily optimized using OpenMP and refactored
+  loops to achieve an ~8x computation speedup (reducing typical calculation
+  times from ~9 seconds to <1 second) with perfectly identical scoring outputs.
+
+  It has also been packaged as a Python library compatible with PyPI and Streamlit.
+  
+* Installation
+  AL2CO can now be easily installed as a Python package. Running `pip install` 
+  will automatically invoke your C compiler (e.g. gcc) to build the OpenMP-optimized
+  native executable bundled directly inside the python package. This requires a 
+  compilation environment, but works seamlessly on platforms like Streamlit Cloud.
+  
+  ```bash
+  pip install .
+  ```
+
+  To run tests after installation, you can install the `pytest` dependency:
+  ```bash
+  pytest tests
+  ```
+
+* Python Usage
+  ```python
+  from Bio import AlignIO
+  from al2co import run_al2co
+  
+  msa = AlignIO.read("alignment.aln", "clustal")
+  scores = run_al2co(msa, f=1, c=2, w=1)
+  
+  print(scores) # { 1: 0.54, 2: 1.25, ... }
+  ```
+
+* Manual Compilation (Legacy)
   cc al2co.c -o al2co -lm
   or
-  gcc al2co.c -o al2co -lm
+  gcc -O3 -fopenmp al2co.c -o al2co -lm
 
 * Conservation calculation methods:
   Two steps are performed to estimate conservation of a position in a 

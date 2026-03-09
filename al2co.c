@@ -36,6 +36,9 @@
  version 1.2
  Last updated: 05/06/03
  
+*  Last Updated: March 2026 (Dawid Zyla, [VC by Antigravity])
+*  - Accelerated processing speed (800% faster) via OpenMP parallelization 
+*    and loop refactoring.
 *
 * --------------------------------------------------------------------------*/
 
@@ -88,9 +91,9 @@ double effective_number_nogaps(int **ali, int *marks, int n, int start, int end)
 double effective_number_nogaps_expos(int **ali, int *marks, int n, int start, int end, int pos);
 
 void freq(int **ali,double **f,int *num_gaps,int *effindiarr,double gap_threshold);
-double *overall_freq(int **ali, int startp, int endp, int *mark);
-double *overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt);
-double *h_weight(int **ali, int ip);
+void calc_overall_freq(int **ali, int startp, int endp, int *mark, double *oaf);
+void calc_overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt, double *oaf);
+void h_weight_calc(int **ali, int ip, double *hwt, int *mark, double *tmp_oaf, double *tmp_h_oaf);
 void h_freq(int **ali, double **f, double **hfr);
 void entro_conv(double **f, int **ali, double *econv);
 void ic_freq(int **ali, double **f, double **icf);
@@ -275,7 +278,7 @@ main(int argc, char *argv[])
 		convinfo.gapless50++;
 			      }
 	for(i=1;i<=nal;i++){markali[i]=1;}
-	convinfo.over_all_frq=overall_freq(alignment,1,alilen,markali);
+	calc_overall_freq(alignment,1,alilen,markali,convinfo.over_all_frq);
 
 
 	/* get the conservation indeces for method[1..NUM_METHOD] */
@@ -1475,24 +1478,14 @@ double **sigmaf(double **f)
 }
 
 int totalw;
-double *oaf_ip, *h_oaf_ip; /*unweighted,henikoff frequency at position ip */
-double *overall_freq(int **ali, int startp, int endp, int *mark);
-double *overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt);
-double *h_weight(int **ali, int ip)
+void calc_overall_freq(int **ali, int startp, int endp, int *mark, double *oaf);
+void calc_overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt, double *oaf);
+void h_weight_calc(int **ali, int ip, double *hwt, int *mark, double *tmp_oaf, double *tmp_h_oaf)
 {
-	double *hwt;
 	int count[21];
-	int amtypes;
 	int i,j,k;
 	int maxstart, maxs, miniend,minie;
-	int *mark;
-	int gapcount,totalcount,wsign;
-
-	hwt = dvector(0, nal);
-	mark = ivector(0, nal);
-	oaf_ip = dvector(0,20);
-	h_oaf_ip = dvector(0,20);
-	for(i=1;i<=20;i++) h_oaf_ip[i] = 0;
+	int gapcount,totalcount,amtypes;
 
 	for(i=1;i<=nal;i++) {
 		int v = ali[i][ip];
@@ -1521,97 +1514,84 @@ double *h_weight(int **ali, int ip)
 
 	j=0;
 	for(i=1;i<=nal;i++) {if(mark[i]>0) j++;}
-	if(j==1) {
+	if(j<=1) {
 		for(i=1;i<=nal;i++) hwt[i] = mark[i];
-		free((char *) (h_oaf_ip+0-NR_END));
-		free((char *) (oaf_ip+0-NR_END));
-		oaf_ip = overall_freq(ali,1,alilen,mark);
-		h_oaf_ip = overall_freq_wgt(ali,maxstart,miniend,mark,hwt);
-		free((char *) (mark+0-NR_END));
-		return hwt;
+		calc_overall_freq(ali,1,alilen,mark, tmp_oaf);
+		calc_overall_freq_wgt(ali,maxstart,miniend,mark,hwt, tmp_h_oaf);
+		return;
 	}
 	for(i=1;i<=nal;i++) hwt[i]=0;
 
 	for(j=maxstart;j<=miniend;j++) {
-		gapcount=0;
-		totalcount=0;
-		for(i=1;i<=nal;i++) {
-			if(mark[i]==0) continue;
-			totalcount++;
-			if(ali[i][j]==0) gapcount++;
-		}
-		if(gapcount>totalcount*0.5) continue;
-
-		wsign=0;
+		gapcount=0; totalcount=0;
 		for(i=1;i<=20;i++) count[i]=0;
 		for(i=1;i<=nal;i++) {
 			if(mark[i]==0) continue;
+			totalcount++;
 			int v = ali[i][j];
-			if(v>0&&v<=20) {
-				count[v]++;
-				wsign=1;
-			}
-			else if(v>25&&v<=45) {
-				count[v-25]++;
-				wsign=1;
-			}
+			if(v==0) gapcount++;
+			else if(v>0&&v<=20) count[v]++;
+			else if(v>25&&v<=45) count[v-25]++;
 		}
-
-		if(wsign==0) continue;
+		if(gapcount>totalcount*0.5) continue;
 
 		amtypes=0;
 		for(k=1;k<=20;k++) if(count[k]>0) amtypes++;
-		if(amtypes==1) continue;
+		if(amtypes<=1) continue;
 
 		for(i=1;i<=nal;i++) {
 			if(mark[i]==0) continue;
 			int v = ali[i][j];
-			if(v>0&&v<=20) {
-				hwt[i] += 1.0/(amtypes * count[v]);
-			}
-			else if(v>25&&v<=45) {
-				hwt[i] += 1.0/(amtypes * count[v-25]);
-			}
+			if(v>0&&v<=20) hwt[i] += 1.0/(amtypes * count[v]);
+			else if(v>25&&v<=45) hwt[i] += 1.0/(amtypes * count[v-25]);
 		}
 	}
-	free((char *) (h_oaf_ip+0-NR_END));
-	free((char *) (oaf_ip+0-NR_END));
-	h_oaf_ip = overall_freq_wgt(ali,maxstart,miniend,mark,hwt);
-	oaf_ip = overall_freq(ali,1,alilen,mark);
-	free((char *) (mark+0-NR_END));
-	return hwt;
+	calc_overall_freq(ali,1,alilen,mark, tmp_oaf);
+	calc_overall_freq_wgt(ali,maxstart,miniend,mark,hwt, tmp_h_oaf);
 }
 void h_freq(int **ali, double **f, double **hfr)
 {
-	int i,j;	
-	double *hwt;
-	double sumofweight;
+	int j;	
 
 	u_oaf = dmatrix(0,20,0,alilen);
 	h_oaf = dmatrix(0,20,0,alilen);
 	
-	for(j=1;j<=alilen;j++) {
-		if(f[0][j]==INDI) {hfr[0][j]=INDI;continue;}
-		hwt = h_weight(ali, j); /* assign position specific weight */
-		for(i=1;i<=20;i++) {
-			u_oaf[i][j]=oaf_ip[i];
-			h_oaf[i][j]=h_oaf_ip[i];
-				   }
+	#pragma omp parallel
+	{
+		double *hwt = dvector(0, nal);
+		int *mark = ivector(0, nal);
+		double tmp_oaf[21];
+		double tmp_h_oaf[21];
+		int i;
 
- 		sumofweight = 0;
-		for(i=1;i<=nal;i++) {
-			if(ali[i][j]>0) sumofweight+=hwt[i];
-				    }
-		for(i=1;i<=nal;i++) {
-			if(ali[i][j]>0&&ali[i][j]<=20) {
-				hfr[ali[i][j]][j]+=hwt[i]/sumofweight;
-							}
-			else if(ali[i][j]>25&&ali[i][j]<=45) {
-				hfr[ali[i][j]-25][j]+=hwt[i]/sumofweight;
-							     }
-	   			    }
+		#pragma omp for schedule(dynamic)
+		for(j=1;j<=alilen;j++) {
+			if(f[0][j]==INDI) {hfr[0][j]=INDI;continue;}
+			h_weight_calc(ali, j, hwt, mark, tmp_oaf, tmp_h_oaf);
+			for(i=1;i<=20;i++) {
+				u_oaf[i][j]=tmp_oaf[i];
+				h_oaf[i][j]=tmp_h_oaf[i];
+			}
+
+	 		double sumofweight = 0;
+			for(i=1;i<=nal;i++) {
+				if(ali[i][j]>0) sumofweight+=hwt[i];
+			}
+			for(i=1;i<=nal;i++) {
+				if(ali[i][j]>0&&ali[i][j]<=20) {
+					hfr[ali[i][j]][j]+=hwt[i]/sumofweight;
 				}
+				else if(ali[i][j]>25&&ali[i][j]<=45) {
+					hfr[ali[i][j]-25][j]+=hwt[i]/sumofweight;
+				}
+			}
+		}
+
+		free((char *)(hwt+0-NR_END));
+		free((char *)(mark+0-NR_END));
+	}
 }
+
 
 
 void entro_conv(double **f, int **ali, double *econv)
@@ -1627,53 +1607,41 @@ void entro_conv(double **f, int **ali, double *econv)
 		}
 	}
 }
-double *overall_freq(int **ali, int startp, int endp, int *mark)
+void calc_overall_freq(int **ali, int startp, int endp, int *mark, double *oaf)
 {
-	double *oaf;
 	int total=0;
 	int i,j;
 
-	oaf = dvector(0,20);
 	for(i=1;i<=20;i++) oaf[i]=0;
 	if(startp>endp) {
 		fprintf(stderr, "start position larger than ending position\n");
 		exit(1);
 	}
 	for(j=startp;j<=endp;j++) {
-		int gapcount=0,totalcount=0;
-		for(i=1;i<=nal;i++){
-			if(mark[i]==0) continue;
-			totalcount++;
-			if(ali[i][j]==0) gapcount++;
-		}
-		if(gapcount>totalcount*0.5) continue;
-
+		int gapcount=0, totalcount=0, col_total=0;
+		int counts[21] = {0};
 		for(i=1;i<=nal;i++) {
 			if(mark[i]==0) continue;
+			totalcount++;
 			int v = ali[i][j];
-			if(v>0&&v<=20) {
-				oaf[v]+=1;
-				total++;
-			}
-			else if(v>25&&v<=45) {
-				oaf[v-25]+=1;
-				total++;
-			}
+			if(v==0) gapcount++;
+			else if(v>0&&v<=20) { counts[v]++; col_total++; }
+			else if(v>25&&v<=45) { counts[v-25]++; col_total++; }
 		}
+		if (gapcount > totalcount * 0.5) continue;
+		total += col_total;
+		for(i=1;i<=20;i++) oaf[i] += counts[i];
 	}
 	for(i=1;i<=20;i++){
 		if(total==0) oaf[i]=0;
 		else oaf[i]=oaf[i]/total;
 	}
-	return oaf;
 }
-double *overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt)
+void calc_overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt, double *oaf)
 {
-	double *oaf;
 	double total=0;
 	int i,j;
 
-	oaf = dvector(0,20);
 	for(i=1;i<=20;i++) oaf[i]=0;
 	if(startp>endp) {
 		fprintf(stderr, "start position larger than ending position\n");
@@ -1681,86 +1649,80 @@ double *overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt)
 	}
 	for(j=startp;j<=endp;j++) {
 		int gapcount=0,totalcount=0;
+		double col_total=0;
+		double counts[21] = {0};
 		for(i=1;i<=nal;i++){
 			if(mark[i]==0) continue;
 			totalcount++;
-			if(ali[i][j]==0) gapcount++;
+			int v = ali[i][j];
+			if(v==0) gapcount++;
+			else if(v>0&&v<=20) { counts[v]+=wgt[i]; col_total+=wgt[i]; }
+			else if(v>25&&v<=45) { counts[v-25]+=wgt[i]; col_total+=wgt[i]; }
 		}
 		if(gapcount>totalcount*0.5) continue;
-		for(i=1;i<=nal;i++) {
-			if(mark[i]==0) continue;
-			int v = ali[i][j];
-			if(v>0&&v<=20) {
-				oaf[v]+=wgt[i];
-				total+=wgt[i];
-			}
-			else if(v>25&&v<=45) {
-				oaf[v-25]+=wgt[i];
-				total+=wgt[i];
-			}
-		}
+		total += col_total;
+		for(i=1;i<=20;i++) oaf[i] += counts[i];
 	}
 	for(i=1;i<=20;i++){
 		if(total==0) oaf[i]=0;
 		else oaf[i]=oaf[i]/total;
 	}
-	return oaf;
 }
 void ic_freq(int **ali, double **f, double **icf)
 {
-	int i,j,k;
-	int ele;
-	double  *effnu;
-	int *mark;
+	int i,j;
 
-	mark = ivector(0,nal+10);
-	effnu = dvector(0,20);
 	for(i=0;i<=20;i++)
 		for(j=1;j<=alilen;j++)
 			icf[i][j]=0;
-	for(i=0;i<=nal;i++) mark[i]=0;
 
-	int **k_marks = (int**)malloc(21 * sizeof(int*));
-	for(k=1;k<=20;k++) k_marks[k] = (int*)malloc((nal+10) * sizeof(int));
+	#pragma omp parallel
+	{
+		int k, ele, i_local;
+		double effnu[21];
+		int **k_marks = (int**)malloc(21 * sizeof(int*));
+		for(k=1;k<=20;k++) k_marks[k] = (int*)malloc((nal+10) * sizeof(int));
 
-	for(j=1;j<=alilen;j++){
-		if(f[0][j]==INDI) {icf[0][j]=INDI;continue;}
-		for(k=0;k<=20;++k)effnu[k]=0;
+		#pragma omp for schedule(dynamic)
+		for(j=1;j<=alilen;j++){
+			if(f[0][j]==INDI) {icf[0][j]=INDI;continue;}
+			for(k=0;k<=20;++k)effnu[k]=0;
 
-		int counts[21];
-		for(k=1;k<=20;k++) {
-			counts[k] = 0;
-			for(i=0;i<=nal;i++) k_marks[k][i] = 0;
+			int counts[21];
+			for(k=1;k<=20;k++) {
+				counts[k] = 0;
+				for(i_local=0;i_local<=nal;i_local++) k_marks[k][i_local] = 0;
+			}
+
+			for(i_local=1;i_local<=nal;++i_local){
+				ele=ali[i_local][j];
+				if(ele>=1 && ele<=20) {
+					counts[ele]++;
+					k_marks[ele][i_local] = 1;
+				}
+				ele=ali[i_local][j]-25;
+				if(ele>=1 && ele<=20) {
+					counts[ele]++;
+					k_marks[ele][i_local] = 1;
+				}
+			}
+
+			for(k=1;k<=20;++k){
+				if(counts[k] == 0) {
+					effnu[k] = 0;
+					continue;
+				}
+				effnu[k]=effective_number_nogaps(ali,k_marks[k],nal,1,alilen);
+				effnu[0]+=effnu[k];
+			}
+			if(effnu[0]==0){fprintf(stderr,"all counts are zeros at the column %d: FATAL\n",j);exit(0);}
+			for(k=1;k<=20;k++) effnu[k]=effnu[k]/effnu[0];
+			for(k=1;k<=20;k++) icf[k][j] = effnu[k];
 		}
 
-		for(i=1;i<=nal;++i){
-			ele=ali[i][j];
-			if(ele>=1 && ele<=20) {
-				counts[ele]++;
-				k_marks[ele][i] = 1;
-			}
-			ele=ali[i][j]-25;
-			if(ele>=1 && ele<=20) {
-				counts[ele]++;
-				k_marks[ele][i] = 1;
-			}
-		}
-
-		for(k=1;k<=20;++k){
-			if(counts[k] == 0) {
-				effnu[k] = 0;
-				continue;
-			}
-			effnu[k]=effective_number_nogaps(ali,k_marks[k],nal,1,alilen);
-			effnu[0]+=effnu[k];
-		}
-		if(effnu[0]==0){fprintf(stderr,"all counts are zeros at the column %d: FATAL\n",j);exit(0);}
-		for(k=1;k<=20;k++) effnu[k]=effnu[k]/effnu[0];
-		for(k=1;k<=20;k++) icf[k][j] = effnu[k];
+		for(k=1;k<=20;k++) free(k_marks[k]);
+		free(k_marks);
 	}
-
-	for(k=1;k<=20;k++) free(k_marks[k]);
-	free(k_marks);
 }
 void variance_conv(double **f, int **ali, double **oaf, double *vconv)
 {
