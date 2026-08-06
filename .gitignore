@@ -6,3 +6,11 @@ dist/
 build/
 *.so
 *.o
+
+# Compiled binaries
+al2co_new
+al2co_orig
+
+# Alignment outputs
+*.aln
+10

@@ -47,6 +47,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <string.h>
+#include <time.h>
 /* #include <malloc.h> */
 #include <stddef.h>
 
@@ -156,12 +157,14 @@ void argument();
 void print_parameters(FILE *outfile,char *argi,char *argo,int nt,char *argt,int argb,char *args,int argm,int argf,int argc, int argw, char *argn,char *arga, char *arge, double argg, char *argp,char *argd);
 char ARG_I[2048],ARG_O[2048],ARG_T[2048],ARG_P[2048],ARG_D[2048],ARG_S[2048],ARG_N[50],ARG_A[50],ARG_E[50];
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	FILE *fout, *fpdb,*matrixfile,*fpdbout,*fp,*ft;
 	conv_info convinfo;
 	char fstr[200];
 	int i,j,k,l,nt=0;
+	struct timespec t_start, t_end;
+	clock_gettime(CLOCK_MONOTONIC, &t_start);
 	double sumofconv,heteroatom;
 	int *ptoc1;
 	char *ptoc,tmpstr[200],*convstr;
@@ -267,9 +270,21 @@ main(int argc, char *argv[])
 				convinfo.conv[i][j][k]=INDI;
 
 	/* get the frequencies */
+	clock_gettime(CLOCK_MONOTONIC, &t_end);
+	fprintf(stderr, "READ ALIGNMENT: %.3fs\n", t_end.tv_sec + t_end.tv_nsec*1e-9 - (t_start.tv_sec + t_start.tv_nsec*1e-9));
+	clock_gettime(CLOCK_MONOTONIC, &t_start);
 	freq(alignment,convinfo.fq,convinfo.ngap,convinfo.eff_indi_arr,ARG_G);
+	clock_gettime(CLOCK_MONOTONIC, &t_end);
+	fprintf(stderr, "FREQ: %.3fs\n", t_end.tv_sec + t_end.tv_nsec*1e-9 - (t_start.tv_sec + t_start.tv_nsec*1e-9));
+	clock_gettime(CLOCK_MONOTONIC, &t_start);
 	h_freq(alignment,convinfo.fq,convinfo.hfq);
+	clock_gettime(CLOCK_MONOTONIC, &t_end);
+	fprintf(stderr, "H_FREQ: %.3fs\n", t_end.tv_sec + t_end.tv_nsec*1e-9 - (t_start.tv_sec + t_start.tv_nsec*1e-9));
+	clock_gettime(CLOCK_MONOTONIC, &t_start);
 	ic_freq(alignment,convinfo.fq,convinfo.icfq);
+	clock_gettime(CLOCK_MONOTONIC, &t_end);
+	fprintf(stderr, "IC_FREQ: %.3fs\n", t_end.tv_sec + t_end.tv_nsec*1e-9 - (t_start.tv_sec + t_start.tv_nsec*1e-9));
+	clock_gettime(CLOCK_MONOTONIC, &t_start);
 
 	convinfo.gapless50=0;
 	threshold = 0.5*convinfo.nali;
@@ -334,7 +349,13 @@ main(int argc, char *argv[])
 
 
 	/* normalize the conservation indices */
+	clock_gettime(CLOCK_MONOTONIC, &t_end);
+	fprintf(stderr, "BEFORE NMLCONV: %.3fs\n", t_end.tv_sec + t_end.tv_nsec*1e-9 - (t_start.tv_sec + t_start.tv_nsec*1e-9));
+	clock_gettime(CLOCK_MONOTONIC, &t_start);
 	nmlconv(consv, convinfo, ARG_W, ARG_C*3+ARG_F+1);
+	clock_gettime(CLOCK_MONOTONIC, &t_end);
+	fprintf(stderr, "NMLCONV: %.3fs\n", t_end.tv_sec + t_end.tv_nsec*1e-9 - (t_start.tv_sec + t_start.tv_nsec*1e-9));
+	clock_gettime(CLOCK_MONOTONIC, &t_start);
 	if((strcmp(ARG_N,"F")==0)||(strcmp(ARG_N,"f")==0)){
 	    for(i=1;i<=convinfo.alignlen;i++){
 		if(convinfo.conv[ARG_W][ARG_C*3+ARG_F+1][i]==INDI){
@@ -445,6 +466,8 @@ else{
 	}
 
 	if((fout=fopen(ARG_O,"w"))==NULL) fout = stdout;
+	/* Use buffered output for better performance */
+	setvbuf(fout, NULL, _IOFBF, 65536);
         for(i=1;i<=convinfo.alignlen;i++){
 	    fprintf(fout, "%-5d %c      ",i,am[alignment[1][i]]);
 	    for(j=1;j<=NUM_METHOD;j++) {
@@ -462,6 +485,7 @@ else{
     }
     else {
         if((fout=fopen(ARG_O,"w"))==NULL){
+		setvbuf(stdout, NULL, _IOFBF, 65536);
         for(i=1;i<=convinfo.alignlen;i++){
                 if(convinfo.conv[ARG_W][ARG_C*3+ARG_F+1][i]==INDI){
                 fprintf(stdout, "%-5d %c      %6.3f    *\n", i,am[alignment[1][i]], consv[i]);
@@ -476,6 +500,7 @@ else{
         print_parameters(stdout,ARG_I,ARG_O,nt,ARG_T,ARG_B,ARG_S,ARG_M,ARG_F,ARG_C,ARG_W,ARG_N,ARG_A,ARG_E,ARG_G,ARG_P,ARG_D);
                                          }
         else{
+	setvbuf(fout, NULL, _IOFBF, 65536);
         for(i=1;i<=convinfo.alignlen;i++){
                 if(convinfo.conv[ARG_W][ARG_C*3+ARG_F+1][i]==INDI){
                 fprintf(fout, "%-5d %c      %6.3f *\n", i,am[alignment[1][i]], consv[i]);
@@ -490,6 +515,8 @@ else{
         fclose(fout);
             }
 	}
+	clock_gettime(CLOCK_MONOTONIC, &t_end);
+	fprintf(stderr, "\nTOTAL TIME: %.3fs\n", t_end.tv_sec + t_end.tv_nsec*1e-9 - (t_start.tv_sec + t_start.tv_nsec*1e-9));
 	/*print_parameters(stderr,ARG_I,ARG_O,nt,ARG_T,ARG_B,ARG_S,ARG_M,ARG_F,ARG_C,ARG_W,ARG_N,ARG_G,ARG_P,ARG_D);*/
 	exit(0);
 
@@ -1415,7 +1442,7 @@ void freq(int **ali,double **f,int *num_gaps,int *effindiarr,double gap_threshol
 	/* find the number of frequences at each position */
 	effnumind=0;
 	for(j=1;j<=alilen;j++){
-		for(i=0;i<=20;i++) count[i]=0;
+		memset(count, 0, sizeof(count));
 		for(i=1;i<=nal;i++) {
 			if(ali[i][j]<=20) {count[ali[i][j]]++;}
 			else {if(ali[i][j]>25&&ali[i][j]<=45)
@@ -1670,7 +1697,8 @@ void calc_overall_freq_wgt(int **ali,int startp,int endp,int *mark,double *wgt, 
 }
 void ic_freq(int **ali, double **f, double **icf)
 {
-	int i,j;
+	int i,j,k,ele,i_local;
+	double effnu[21];
 
 	for(i=0;i<=20;i++)
 		for(j=1;j<=alilen;j++)
@@ -1680,6 +1708,7 @@ void ic_freq(int **ali, double **f, double **icf)
 	{
 		int k, ele, i_local;
 		double effnu[21];
+		int counts[21];
 		int **k_marks = (int**)malloc(21 * sizeof(int*));
 		for(k=1;k<=20;k++) k_marks[k] = (int*)malloc((nal+10) * sizeof(int));
 
@@ -1688,36 +1717,35 @@ void ic_freq(int **ali, double **f, double **icf)
 			if(f[0][j]==INDI) {icf[0][j]=INDI;continue;}
 			for(k=0;k<=20;++k)effnu[k]=0;
 
-			int counts[21];
 			for(k=1;k<=20;k++) {
 				counts[k] = 0;
-				for(i_local=0;i_local<=nal;i_local++) k_marks[k][i_local] = 0;
+				memset(k_marks[k], 0, (nal+10) * sizeof(int));
 			}
 
-			for(i_local=1;i_local<=nal;++i_local){
-				ele=ali[i_local][j];
-				if(ele>=1 && ele<=20) {
-					counts[ele]++;
-					k_marks[ele][i_local] = 1;
-				}
-				ele=ali[i_local][j]-25;
-				if(ele>=1 && ele<=20) {
-					counts[ele]++;
-					k_marks[ele][i_local] = 1;
-				}
+		for(i_local=1;i_local<=nal;++i_local){
+			ele=ali[i_local][j];
+			if(ele>=1 && ele<=20) {
+				counts[ele]++;
+				k_marks[ele][i_local] = 1;
 			}
+			ele=ali[i_local][j]-25;
+			if(ele>=1 && ele<=20) {
+				counts[ele]++;
+				k_marks[ele][i_local] = 1;
+			}
+		}
 
-			for(k=1;k<=20;++k){
-				if(counts[k] == 0) {
-					effnu[k] = 0;
-					continue;
-				}
-				effnu[k]=effective_number_nogaps(ali,k_marks[k],nal,1,alilen);
-				effnu[0]+=effnu[k];
+		for(k=1;k<=20;++k){
+			if(counts[k] == 0) {
+				effnu[k] = 0;
+				continue;
 			}
-			if(effnu[0]==0){fprintf(stderr,"all counts are zeros at the column %d: FATAL\n",j);exit(0);}
-			for(k=1;k<=20;k++) effnu[k]=effnu[k]/effnu[0];
-			for(k=1;k<=20;k++) icf[k][j] = effnu[k];
+			effnu[k]=effective_number_nogaps(ali,k_marks[k],nal,1,alilen);
+			effnu[0]+=effnu[k];
+		}
+		if(effnu[0]==0){fprintf(stderr,"all counts are zeros at the column %d: FATAL\n",j);exit(0);}
+		for(k=1;k<=20;k++) effnu[k]=effnu[k]/effnu[0];
+		for(k=1;k<=20;k++) icf[k][j] = effnu[k];
 		}
 
 		for(k=1;k<=20;k++) free(k_marks[k]);
