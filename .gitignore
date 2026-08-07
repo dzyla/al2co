@@ -10,6 +10,9 @@ build/
 # Compiled binaries
 al2co_new
 al2co_orig
+al2co_opt
+al2co_test
+al2co_final
 
 # Alignment outputs
 *.aln

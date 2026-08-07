@@ -61,6 +61,39 @@
 #define MAXSEQNUM 10000
 
 char *digit="0123456789";
+
+/* Pre-computed amino acid lookup table: maps ASCII char -> AA number (0-20, 24, 25) */
+static int aa_lookup[256];
+static void build_aa_lookup(void) {
+    int i;
+    for (i = 0; i < 256; i++) aa_lookup[i] = 25; /* default: unknown */
+    aa_lookup['A'] = aa_lookup['a'] = 8;
+    aa_lookup['C'] = aa_lookup['c'] = 9;
+    aa_lookup['D'] = aa_lookup['d'] = 16;
+    aa_lookup['E'] = aa_lookup['e'] = 17;
+    aa_lookup['F'] = aa_lookup['f'] = 2;
+    aa_lookup['G'] = aa_lookup['g'] = 10;
+    aa_lookup['H'] = aa_lookup['h'] = 18;
+    aa_lookup['I'] = aa_lookup['i'] = 6;
+    aa_lookup['K'] = aa_lookup['k'] = 20;
+    aa_lookup['L'] = aa_lookup['l'] = 5;
+    aa_lookup['M'] = aa_lookup['m'] = 4;
+    aa_lookup['N'] = aa_lookup['n'] = 14;
+    aa_lookup['P'] = aa_lookup['p'] = 11;
+    aa_lookup['Q'] = aa_lookup['q'] = 15;
+    aa_lookup['R'] = aa_lookup['r'] = 19;
+    aa_lookup['S'] = aa_lookup['s'] = 13;
+    aa_lookup['T'] = aa_lookup['t'] = 12;
+    aa_lookup['V'] = aa_lookup['v'] = 7;
+    aa_lookup['W'] = aa_lookup['w'] = 1;
+    aa_lookup['Y'] = aa_lookup['y'] = 3;
+    aa_lookup['B'] = aa_lookup['b'] = 21;
+    aa_lookup['Z'] = aa_lookup['z'] = 22;
+    aa_lookup['X'] = aa_lookup['x'] = 23;
+    aa_lookup['*'] = 24;
+    aa_lookup['-'] = aa_lookup['.'] = 0;
+}
+
 void nrerror(char error_text[]);
 char *cvector(long nl, long nh);
 int *ivector(long nl, long nh);
@@ -120,6 +153,31 @@ char **aname, **aseq;
 int nal, alilen, *astart, *alen;
 int **alignment;
 double **u_oaf,**h_oaf;
+
+/* Pre-computed per-sequence statistics for h_weight_calc optimization */
+static int seq_first_nongap[MAXSEQNUM+1];
+static int seq_last_nongap[MAXSEQNUM+1];
+static int seq_aa_total[MAXSEQNUM+1][21];
+static void precompute_seq_stats(int **ali) {
+    int i, j;
+    for (i = 1; i <= nal; i++) {
+        seq_first_nongap[i] = alilen;
+        seq_last_nongap[i] = 1;
+        memset(seq_aa_total[i], 0, sizeof(seq_aa_total[i]));
+        for (j = 1; j <= alilen; j++) {
+            int v = ali[i][j];
+            if (v > 0 && v <= 20) {
+                seq_aa_total[i][v]++;
+                if (j < seq_first_nongap[i]) seq_first_nongap[i] = j;
+                if (j > seq_last_nongap[i]) seq_last_nongap[i] = j;
+            } else if (v > 25 && v <= 45) {
+                seq_aa_total[i][v-25]++;
+                if (j < seq_first_nongap[i]) seq_first_nongap[i] = j;
+                if (j > seq_last_nongap[i]) seq_last_nongap[i] = j;
+            }
+        }
+    }
+}
 char *am="-WFYMLIVACGPTSNQDEHRKBZX*.wfymlivacgptsnqdehrkbzx";
 char *am3[]={
 "---",
@@ -183,6 +241,7 @@ int main(int argc, char *argv[])
 
 
 	/*read input arguments */
+        build_aa_lookup();
         if(argc<=2) { argument(); exit(0);}
 	for(i=1;i<argc;i++) {
 	    if(strcmp(argv[i],"-i")==0) {strcpy(ARG_I,argv[i+1]);i++;continue;}
@@ -246,6 +305,9 @@ int main(int argc, char *argv[])
 	if(alignment==NULL){
 		fprintf(stderr, "alignment file not readable\n");
 			   }
+
+	/* Pre-compute per-sequence statistics for h_weight_calc optimization */
+	precompute_seq_stats(alignment);
 
 	/* memory allocation for the elements in convinfo*/
 	convinfo.alignlen=alilen;
@@ -426,7 +488,10 @@ else{
 		fprintf(fpdbout,"%s",fstr);
 		    /*}*/
 
-		fgets(fstr,MAXSTR,fpdb);
+		if(fgets(fstr,MAXSTR,fpdb)==NULL){
+			fprintf(fpdbout,"END\n");
+			break;
+		}
 		if(strncmp(fstr,"ATOM   ",7)!=0){
 		   if(strncmp(fstr,"HETATM ",7)==0){;}
 		   else{fprintf(fpdbout,"END\n");break;}
@@ -917,7 +982,7 @@ for(i=nrl+1;i<=nrh;i++){
 return t;
 }
 
-int am2num_c(c)
+int am2num_c(int c)
 {
 	switch (c) {
 		case 'W': return 1;
@@ -971,7 +1036,7 @@ int am2num_c(c)
 		default: return 25;
 	}
 }
-int am2num(c)
+int am2num(int c)
 {
 	switch (c) {
 		case 'A': case 'a': return 8;
@@ -997,7 +1062,7 @@ int am2num(c)
 		default: return 0;
 	}
 }
-int am2numBZX(c)
+int am2numBZX(int c)
 {
 switch (c) {
                  case 'W': case 'w':
@@ -1081,8 +1146,7 @@ double effective_number_nogaps_expos(int **ali, int *marks, int n, int start, in
 
 
 
-static void *mymalloc(size)
-int size;
+static void *mymalloc(int size)
 {
 	void *buf;
 
@@ -1093,8 +1157,7 @@ int size;
 	return buf;
 }
 
-char *strsave(str)
-char *str;
+char *strsave(char *str)
 {
 	char *buf;
 	int l;
@@ -1105,9 +1168,7 @@ char *str;
 	return buf;
 }
 
-char *strnsave(str, l)
-char *str;
-int l;
+char *strnsave(char *str, int l)
 {
 	char *buf;
 
@@ -1117,9 +1178,7 @@ int l;
 	return buf;
 }
 
-static char **incbuf(n, was)
-int n;
-char **was;
+static char **incbuf(int n, char **was)
 {
 	char **buf;
 	char *aaa;
@@ -1133,8 +1192,7 @@ char **was;
 	return buf;
 }
 
-static int *incibuf(n, was)
-int n, *was;
+static int *incibuf(int n, int *was)
 {
 	int *ibuf;
 
@@ -1151,8 +1209,7 @@ void err_readali(int err_num)
 	fprintf(stderr,"Error with reading alignment: %d\n",err_num);
 }
 
-void readali(filename)
-char *filename;
+void readali(char *filename)
 {
 	FILE *fp;
 	char *s, *ss, *seqbuf;
@@ -1347,7 +1404,12 @@ int **ali;
 end_num=start_num+nal-1;
 end_seq=start_seq+alilen-1;
 ali=imatrix(start_num,end_num,start_seq,end_seq);
-for(i=start_num;i<=end_num;++i)for(j=start_seq;j<=end_seq;++j)ali[i][j]=am2num(aseq[i-start_num][j-start_seq]);
+/* Use fast lookup table instead of switch statement */
+for(i=start_num;i<=end_num;++i) {
+    char *seq = aseq[i-start_num];
+    int *ali_row = ali[i];
+    for(j=start_seq;j<=end_seq;++j) ali_row[j]=aa_lookup[(unsigned char)seq[j-start_seq]];
+}
 return ali;
 }
 
@@ -1519,23 +1581,13 @@ void h_weight_calc(int **ali, int ip, double *hwt, int *mark, double *tmp_oaf, d
 		mark[i] = ((v>0&&v<=20)||(v>25&&v<=45)) ? 1 : 0;
 	}
 
+	/* Use pre-computed first/last non-gap columns instead of scanning all columns */
 	maxstart = 1;
 	miniend = alilen;
 	for(i=1;i<=nal;i++){
 		if(mark[i]==0) continue;
-		maxs = 1;
-		for(j=1;j<=alilen;j++) {
-			if(ali[i][j]==0) maxs++;
-			else break;
-		}
-		if(maxstart<maxs) maxstart = maxs;
-
-		minie = alilen;
-		for(j=alilen;j>0;j--) {
-			if(ali[i][j]==0) minie--;
-			else break;
-		}
-		if(miniend>minie) miniend = minie;
+		if(seq_first_nongap[i] > maxstart) maxstart = seq_first_nongap[i];
+		if(seq_last_nongap[i] < miniend) miniend = seq_last_nongap[i];
 	}
 	if(maxstart > miniend) maxstart = miniend;
 
@@ -1625,6 +1677,7 @@ void entro_conv(double **f, int **ali, double *econv)
 {
 	int i,j;
 
+	#pragma omp parallel for schedule(static)
 	for (j=1;j<=alilen;j++){
 		econv[j]=0;
 		if(f[0][j]==INDI) {econv[j]=INDI;continue;}
@@ -1756,7 +1809,7 @@ void variance_conv(double **f, int **ali, double **oaf, double *vconv)
 {
 	int i,j;
 
-	for(i=1;i<=alilen;i++) vconv[i]=0;
+	#pragma omp parallel for schedule(static)
 	for(j=1;j<=alilen;j++) {
 		if(f[0][j]==INDI) {vconv[j]=INDI;continue;}
 		for(i=1;i<=20;i++) {
@@ -1793,6 +1846,8 @@ void pairs_conv(double **f,int **ali,int **matrix1,int indx,double *pconv)
 				    }
 				      }
 	
+	/* Parallelize the column loop - each column is independent */
+	#pragma omp parallel for schedule(static)
 	for(j=1;j<=alilen;j++) {
 		if(f[0][j]==INDI){pconv[j]=INDI; continue;}
 		pconv[j]=0;
